@@ -12,7 +12,6 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_platform
-from homeassistant.helpers.device_info import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import imaging
@@ -81,7 +80,7 @@ class CatPrinterNotifyEntity(NotifyEntity):
     def __init__(self, printer: CatPrinter, entry: ConfigEntry) -> None:
         self._printer = printer
         self._attr_unique_id = entry.entry_id
-        self._attr_device_info = DeviceInfo(
+        self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, printer.address)},
             connections={(dr.CONNECTION_BLUETOOTH, printer.address)},
             name=entry.title,
