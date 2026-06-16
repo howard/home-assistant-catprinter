@@ -55,9 +55,27 @@ class CatPrinter:
         """Encode ``rows`` (True == black) and send the job over BLE."""
         data = commands.cmds_print_img(rows, energy=energy)
         async with self._lock:
-            await self._send(data)
+            await self._send(data, wait_for_done=True)
 
-    async def _send(self, data: bytes) -> None:
+    async def keep_alive(self) -> None:
+        """Send a harmless state query to keep the printer from powering off.
+
+        This must never raise: the printer is often briefly out of range or
+        asleep, which is expected and not actionable, so failures are logged at
+        debug level only.
+        """
+        async with self._lock:
+            try:
+                await self._send(
+                    bytes(commands.CMD_GET_DEV_STATE), wait_for_done=False
+                )
+                _LOGGER.debug("Sent keep-alive ping to %s", self._name)
+            except Exception as err:  # noqa: BLE001 - keep-alive is best-effort
+                _LOGGER.debug(
+                    "Keep-alive ping to %s skipped: %s", self._name, err
+                )
+
+    async def _send(self, data: bytes, wait_for_done: bool) -> None:
         ble_device = bluetooth.async_ble_device_from_address(
             self._hass, self._address, connectable=True
         )
@@ -79,7 +97,8 @@ class CatPrinter:
         )
         try:
             chunk_size = max((client.mtu_size or 23) - 3, 20)
-            await client.start_notify(RX_CHARACTERISTIC_UUID, _on_notify)
+            if wait_for_done:
+                await client.start_notify(RX_CHARACTERISTIC_UUID, _on_notify)
             _LOGGER.debug(
                 "Sending %d bytes to %s in %d-byte chunks",
                 len(data),
@@ -92,17 +111,18 @@ class CatPrinter:
                 )
                 await asyncio.sleep(WAIT_AFTER_EACH_CHUNK_S)
 
-            try:
-                await asyncio.wait_for(
-                    done.wait(), timeout=WAIT_FOR_PRINTER_DONE_TIMEOUT
-                )
-            except asyncio.TimeoutError:
-                # The data was sent; the printer just never acked. Most prints
-                # still come out, so warn rather than fail the whole call.
-                _LOGGER.warning(
-                    "Timed out waiting for %s to report the print finished",
-                    self._name,
-                )
+            if wait_for_done:
+                try:
+                    await asyncio.wait_for(
+                        done.wait(), timeout=WAIT_FOR_PRINTER_DONE_TIMEOUT
+                    )
+                except asyncio.TimeoutError:
+                    # The data was sent; the printer just never acked. Most
+                    # prints still come out, so warn rather than fail the call.
+                    _LOGGER.warning(
+                        "Timed out waiting for %s to report the print finished",
+                        self._name,
+                    )
         finally:
             with _suppress_disconnect_errors():
                 await client.disconnect()

@@ -17,6 +17,17 @@
       "already_configured": "This printer is already configured."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cat Printer options",
+        "description": "The printer is kept awake by sending it a harmless command on a regular interval. The interval must be shorter than the printer's auto-power-off time.",
+        "data": {
+          "keepalive_interval": "Keep-alive interval (seconds)"
+        }
+      }
+    }
+  },
   "services": {
     "print_image": {
       "name": "Print image",

@@ -33,6 +33,13 @@ WAIT_FOR_PRINTER_DONE_TIMEOUT: Final = 30.0
 DEFAULT_ENERGY: Final = 0xFFFF
 MAX_ENERGY: Final = 0xFFFF
 
+# Keep-alive: periodically send a harmless command so the printer doesn't
+# auto-power-off while idle. Interval is configurable via the options flow.
+CONF_KEEPALIVE_INTERVAL: Final = "keepalive_interval"
+DEFAULT_KEEPALIVE_INTERVAL: Final = 60
+MIN_KEEPALIVE_INTERVAL: Final = 15
+MAX_KEEPALIVE_INTERVAL: Final = 600
+
 # Service names and field attributes.
 SERVICE_PRINT_IMAGE: Final = "print_image"
 SERVICE_PRINT_TEXT: Final = "print_text"

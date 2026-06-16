@@ -9,10 +9,24 @@ from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
     async_discovered_service_info,
 )
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_ADDRESS
+from homeassistant.core import callback
 
-from .const import DOMAIN, KNOWN_NAME_PREFIXES, SERVICE_UUIDS
+from .const import (
+    CONF_KEEPALIVE_INTERVAL,
+    DEFAULT_KEEPALIVE_INTERVAL,
+    DOMAIN,
+    KNOWN_NAME_PREFIXES,
+    MAX_KEEPALIVE_INTERVAL,
+    MIN_KEEPALIVE_INTERVAL,
+    SERVICE_UUIDS,
+)
 
 
 def _looks_like_printer(info: BluetoothServiceInfoBleak) -> bool:
@@ -32,6 +46,12 @@ class CatPrinterConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovery: BluetoothServiceInfoBleak | None = None
         # address -> human readable label, for the manual picker.
         self._discovered: dict[str, str] = {}
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Return the options flow handler."""
+        return CatPrinterOptionsFlow()
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -89,5 +109,35 @@ class CatPrinterConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {vol.Required(CONF_ADDRESS): vol.In(self._discovered)}
+            ),
+        )
+
+
+class CatPrinterOptionsFlow(OptionsFlow):
+    """Handle Cat Printer options (keep-alive interval)."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current = self.config_entry.options.get(
+            CONF_KEEPALIVE_INTERVAL, DEFAULT_KEEPALIVE_INTERVAL
+        )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_KEEPALIVE_INTERVAL, default=current
+                    ): vol.All(
+                        vol.Coerce(int),
+                        vol.Range(
+                            min=MIN_KEEPALIVE_INTERVAL, max=MAX_KEEPALIVE_INTERVAL
+                        ),
+                    )
+                }
             ),
         )
