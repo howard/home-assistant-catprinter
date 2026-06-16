@@ -1,0 +1,58 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Do you want to set up {name}?"
+      },
+      "user": {
+        "description": "Select a discovered cat printer. Make sure it is powered on and in range.",
+        "data": {
+          "address": "Printer"
+        }
+      }
+    },
+    "abort": {
+      "no_devices_found": "No cat printers were discovered. Make sure the printer is powered on and in range of a Bluetooth adapter.",
+      "already_configured": "This printer is already configured."
+    }
+  },
+  "services": {
+    "print_image": {
+      "name": "Print image",
+      "description": "Print an image on a cat printer. The image is scaled to the paper width and dithered to black and white.",
+      "fields": {
+        "image": {
+          "name": "Image",
+          "description": "An http(s) URL or a local file path (the directory must be in allowlist_external_dirs)."
+        },
+        "energy": {
+          "name": "Energy",
+          "description": "Thermal energy / darkness, from 0 (lightest) to 65535 (darkest)."
+        },
+        "dither": {
+          "name": "Dithering",
+          "description": "Algorithm used to convert the image to black and white."
+        }
+      }
+    },
+    "print_text": {
+      "name": "Print text",
+      "description": "Render text and print it on a cat printer.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "The text to print. Long lines are wrapped to the paper width."
+        },
+        "energy": {
+          "name": "Energy",
+          "description": "Thermal energy / darkness, from 0 (lightest) to 65535 (darkest)."
+        },
+        "font_size": {
+          "name": "Font size",
+          "description": "Text height in pixels."
+        }
+      }
+    }
+  }
+}
